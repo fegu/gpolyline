@@ -16,6 +16,12 @@ type Point = (Double,Double)
 example_decoded = [(38.5, -120.2), (40.7, -120.95), (43.252, -126.453)]
 example_encoded = "_p~iF~ps|U_ulLnnqC_mqNvxq`@"
 
+example_encoded2 = "ctteJe{{b@EESCKWAWCMAEGSQQ]Yo@"
+example_decoded2 = [(58.765620000000006,5.88227),(58.76565000000001,5.8823),(58.76575000000001,5.88232),(58.76581000000001,5.88244),(58.76582000000001,5.88256),(58.76584000000001,5.88263),(58.765850000000015,5.88266),(58.76589000000001,5.882759999999999),(58.76598000000001,5.8828499999999995),(58.76613000000001,5.88298),(58.76637000000001,5.88298)]
+
+example_encoded3 = "ctteJe{{b@E?E?SCK?WAWCMAEGSQQ]Yo@"
+
+
 encodeline :: [Point] -> String
 encodeline points = concatMap encodepoint rels
   where rels = transform points calcoffsets -- step1 turn into offsets from first point
@@ -33,7 +39,11 @@ decodeunsigned str = fromIntegral $ createvalue 5 (clrthem (prepareinput str))
 encodeunsigned :: Int -> String -- convenience function when we have just an unsigned
 encodeunsigned off =
   map (\b -> chr (fromIntegral(b+63))) w32l
-  where w32l = orthem $ shorten (chunkvalue 5 (fromIntegral off))
+  where w32l = shorten $ thedrop (chunkvalue 5 (fromIntegral off))
+        shorten wrd
+          | null wrd = [0]
+          | otherwise = orthem $ reverse wrd
+        thedrop wrd = dropWhile (==0) (reverse wrd) -- remove unnecessary blocks (part of step 6)
 
 -- turns list of values into list of pairs
 -- map (\[a,b] -> (a.b)) (chunksOf 2 <list>) is more succinct, but fails on odd-length
@@ -66,7 +76,11 @@ calcoffsets' (xprev,yprev) lst =
 encodefloat :: Double -> String -- steps 9,10,11: add 63 and convert to ascii
 encodefloat off =
   map (\b -> chr (fromIntegral(b+63))) w32l
-  where w32l = orthem $ shorten (chunkvalue 5 (preparefloat off))
+  where w32l = shorten $ thedrop (chunkvalue 5 (preparefloat off))
+        shorten wrd
+          | null wrd = [0]
+          | otherwise = orthem $ reverse wrd
+        thedrop wrd = dropWhile (==0) (reverse wrd) -- remove unnecessary blocks (part of step 6)
 
 decodefloat :: [Word32] -> Double
 decodefloat lst = 0.00001 * res
@@ -75,9 +89,6 @@ decodefloat lst = 0.00001 * res
         res
           | testBit val 0 = -fromIntegral (num+1)
           | otherwise = fromIntegral num
-
-shorten :: [Word32] -> [Word32]
-shorten wrd = reverse $ dropWhile (==0) (reverse wrd) -- remove unnecessary blocks (part of step 6)
 
 orthem :: [Word32] -> [Word32]  -- step8 bitwise or all blocks except last with 0x20
 orthem [] = []
