@@ -1,16 +1,17 @@
-import GPolyline
+import GPolyline (decodeline)
 
-import Text.Printf
-import System.Environment
-import Data.List
-import System.IO
+import Text.Printf (printf)
+import Data.List (intercalate)
 
-showfloat :: Double -> String
-showfloat f = printf "%.5f" f
+main :: IO ()
+main = interact (package . map processone . lines . removecr)
+  where removecr = filter (/='\r')
   
-main = do
-  beam <- getLine
-  let res = map decodeline (lines (filter (/='\r') beam))
-  let roads = map (\line -> intercalate "," ( map (\(x,y) -> "[" ++ showfloat x ++ "," ++ showfloat y ++ "]") line)) res
-  let txt = intercalate "," (map (\r -> "[" ++ r ++ "]") roads)
-  putStr $ "[" ++ txt ++ "]"
+processone :: String -> String
+processone = package . road
+  where road = map (package . map showfloat . listify) . decodeline
+        listify (x,y) = [x,y]
+        showfloat = printf "%.5f"
+
+package :: [String] -> String
+package xs  = "[" ++ (intercalate "," xs) ++ "]"

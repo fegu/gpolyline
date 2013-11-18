@@ -29,12 +29,12 @@ decodeline str = transform points calcoffsets'
 
 decodeunsigned :: String -> Int -- convenience function when we know that a string has only one unsigned
 decodeunsigned str = fromIntegral $ createvalue 5 (clrthem (prepareinput str))
-  
+
 encodeunsigned :: Int -> String -- convenience function when we have just an unsigned
 encodeunsigned off =
   map (\b -> chr (fromIntegral(b+63))) w32l
   where w32l = orthem $ shorten (chunkvalue 5 (fromIntegral off))
-        
+
 -- turns list of values into list of pairs
 -- map (\[a,b] -> (a.b)) (chunksOf 2 <list>) is more succinct, but fails on odd-length
 pairup :: [a] -> [(a,a)]
@@ -48,7 +48,7 @@ transform [] _ = []
 transform (x:xs) transformer
   | null xs = [x]
   | otherwise = x : transformer x xs
- 
+
 -- Used to convert a list of absolute points to list of relative vectors
 calcoffsets :: Point -> [Point] -> [Point]
 calcoffsets _ [] = []
@@ -62,7 +62,7 @@ calcoffsets' _ [] = []
 calcoffsets' (xprev,yprev) lst =
   (x+xprev,y+yprev) : calcoffsets' (x+xprev,y+yprev) (tail lst)
   where (x,y) = head lst
-  
+
 encodefloat :: Double -> String -- steps 9,10,11: add 63 and convert to ascii
 encodefloat off =
   map (\b -> chr (fromIntegral(b+63))) w32l
@@ -71,14 +71,14 @@ encodefloat off =
 decodefloat :: [Word32] -> Double
 decodefloat lst = 0.00001 * res
   where val = createvalue 5 (clrthem lst)
-        num = fromIntegral (shiftR val 1)
+        num = shiftR val 1
         res
-          | testBit val 0 = (-1) * num
-          | otherwise = num
+          | testBit val 0 = -fromIntegral (num+1)
+          | otherwise = fromIntegral num
 
 shorten :: [Word32] -> [Word32]
 shorten wrd = reverse $ dropWhile (==0) (reverse wrd) -- remove unnecessary blocks (part of step 6)
-  
+
 orthem :: [Word32] -> [Word32]  -- step8 bitwise or all blocks except last with 0x20
 orthem [] = []
 orthem (x:[]) = [x]
@@ -99,12 +99,12 @@ createvalue :: Int -> [Word32] -> Word32 -- reverse of step6+7, put reverse list
 createvalue bitspersegment chunks =
   sum $ zipWith (*) chunks [mul^e | e <- [0..]]
   where mul = bit bitspersegment :: Word32
-  
+
 -- First steps, turning double into word32 (with max 25 bits + 1bit pos/neg content)
 preparefloat :: Double -> Word32
 preparefloat val = bin3
   where int = round (val * 100000)  -- step2 multiply by 1e5 and round
-        bin = fromIntegral int :: Word32 -- step3 convert to binary (2's complement fro negs)
+        bin = fromIntegral int :: Word32 -- step3 convert to binary (2's complement for negs)
         bin2 = shiftL bin 1 -- step4 left shift
         bin3  -- step5 complement if negative
           | val < 0 = complement bin2
