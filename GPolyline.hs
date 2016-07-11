@@ -118,7 +118,7 @@ preparefloat val = bin3
         bin = fromIntegral int :: Word32 -- step3 convert to binary (2's complement for negs)
         bin2 = shiftL bin 1 -- step4 left shift
         bin3  -- step5 complement if negative
-          | val < 0 = complement bin2
+          | int < 0 = complement bin2
           | otherwise = bin2
 
 chunkinput :: [Word32] -> [[Word32]]
